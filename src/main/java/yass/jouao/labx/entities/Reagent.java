@@ -39,4 +39,6 @@ public class Reagent {
 	private Fournisseur fournisseur;
 	@OneToMany(mappedBy = "reagent", fetch = FetchType.LAZY)
 	private Collection<TestReagent> testReagents;
+	@OneToMany(mappedBy = "reagent", fetch = FetchType.LAZY)
+	private Collection<TestTypeReagent> testTypeReagents;
 }

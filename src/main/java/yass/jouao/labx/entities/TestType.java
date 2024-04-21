@@ -35,4 +35,6 @@ public class TestType {
 	private AnalysisType analysisType;
 	@OneToMany(mappedBy = "testType", fetch = FetchType.LAZY)
 	private Collection<Test> tests;
+	@OneToMany(mappedBy = "testType", fetch = FetchType.LAZY)
+	private Collection<TestTypeReagent> testTypeReagents;
 }

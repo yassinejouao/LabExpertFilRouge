@@ -26,6 +26,7 @@ public class AnalysisType {
 	private long id;
 	@Column(nullable = false, unique = true)
 	private String name;
+	private Long price;
 	@OneToMany(mappedBy = "analysisType", fetch = FetchType.LAZY)
 	private Collection<Analysis> analysis;
 	@OneToMany(mappedBy = "analysisType", fetch = FetchType.LAZY)

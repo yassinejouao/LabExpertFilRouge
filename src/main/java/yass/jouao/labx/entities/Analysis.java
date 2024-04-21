@@ -42,6 +42,7 @@ public class Analysis {
 	@Column(nullable = false)
 	private LocalDateTime endDate;
 	private Boolean resultAnalysis;
+	private Long price;
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false)
 	private AnalysisStatus status = AnalysisStatus.WAITING;

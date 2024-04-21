@@ -44,6 +44,8 @@ public class AnalysisDTO implements Serializable {
 	@JsonView({ viewAnalysis.class, saveAnalysis.class, updateAnalysis.class, result.class })
 	private Boolean resultAnalysis;
 	@JsonView({ viewAnalysis.class, saveAnalysis.class, updateAnalysis.class, result.class })
+	private Boolean price;
+	@JsonView({ viewAnalysis.class, saveAnalysis.class, updateAnalysis.class, result.class })
 	private AnalysisStatus status;
 	@JsonView({ viewAnalysis.class, result.class })
 	private PatientDTO patientDTO;

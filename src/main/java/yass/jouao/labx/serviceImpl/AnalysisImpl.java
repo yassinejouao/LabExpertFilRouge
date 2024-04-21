@@ -29,6 +29,8 @@ import yass.jouao.labx.serviceImpl.Mappers.PatientMapper;
 import yass.jouao.labx.serviceImpl.Mappers.TestMapper;
 import yass.jouao.labx.services.IAnalysisService;
 
+import javax.transaction.Transactional;
+
 @Service
 @AllArgsConstructor
 public class AnalysisImpl implements IAnalysisService {
@@ -44,6 +46,8 @@ public class AnalysisImpl implements IAnalysisService {
 	private IAnalysisTypeRepository analysisTypeRepository;
 	private ITestRepository testRepository;
     private ITestReagentRepository testReagentRepository;
+	private ITestTypeReagentRepository testTypeReagentRepository;
+	private IReagentRepository reagentRepository;
 
 	@Override
 	public List<AnalysisDTO> getAllAnalysisInProgress() throws NotFoundException {
@@ -119,6 +123,7 @@ public class AnalysisImpl implements IAnalysisService {
 	}
 
 	@Override
+	@Transactional(rollbackOn = Exception.class)
 	public AnalysisDTO addAnalysisService(AnalysisDTO a) throws NotFoundException {
 		Analysis analysis = analysisMapper.fromAnalysisDTOToAnalysis(a);
 		Optional<Patient> optionalPatient = patientRepository.findById(a.getIdPatient());
@@ -133,6 +138,7 @@ public class AnalysisImpl implements IAnalysisService {
 			analysis.setPatient(optionalPatient.get());
 			analysis.setSample(optionalSample.get());
 			analysis.setUser(optionalUser.get());
+			analysis.setPrice(optionalAnalysisType.get().getPrice());
 			analysis.setAnalysisType(optionalAnalysisType.get());
 			List<TestType> testTypes = testTypeServiceImpl.getAllTestTypesByAnalysis(analysis);
 			Analysis analysis2 = analysisRepository.save(analysis);
@@ -145,6 +151,19 @@ public class AnalysisImpl implements IAnalysisService {
 				test.setStatus(TestStatus.WAITING);
 				test.setResult(ResultTest.WAITING);
 				testRepository.save(test);
+				List<TestTypeReagent> testTypeReagent = testTypeReagentRepository.findAllByTestType(testType);
+				for (TestTypeReagent ttr : testTypeReagent) {
+					TestReagent testReagent = new TestReagent();
+					testReagent.setTest(test);
+					testReagent.setReagent(ttr.getReagent());
+					testReagent.setQuantity(ttr.getQuantity());
+					Optional<Reagent> r = reagentRepository.findById(ttr.getReagent().getId());
+					if(r.get().getStock() <= 0) {
+						throw new NotFoundException("Reagent out of stock");
+					}
+					r.get().setStock(r.get().getStock() - ttr.getQuantity());
+					testReagentRepository.save(testReagent);
+				}
 			}
 			return analysisMapper.fromAnalysisToAnalysisDTO(analysis2);
 		} else {
@@ -163,7 +182,7 @@ public class AnalysisImpl implements IAnalysisService {
 		case WEEK:
 			return groupByWeek(analyses);
 		case MONTH:
-			return groupByMonth(analyses);
+			return groupByMonthForSum(analyses);
 		default:
 			throw new IllegalArgumentException("Interval not found");
 		}
@@ -176,12 +195,19 @@ public class AnalysisImpl implements IAnalysisService {
 		return convertToResultFunction(groupedByDay);
 	}
 
-	private List<AnalysisResultDTO> groupByMonth(List<Analysis> analyses) {
-		Map<LocalDate, Long> groupedByMonth = analyses.stream().collect(Collectors.groupingBy(
-				analysis -> analysis.getStartDate().toLocalDate().withDayOfMonth(1), Collectors.counting()));
+//	private List<AnalysisResultDTO> groupByMonth(List<Analysis> analyses) {
+//		Map<LocalDate, Long> groupedByMonth = analyses.stream().collect(Collectors.groupingBy(
+//				analysis -> analysis.getStartDate().toLocalDate().withDayOfMonth(1), Collectors.counting()));
+//
+//		return convertToResultFunction(groupedByMonth);
+//	}
+private List<AnalysisResultDTO> groupByMonthForSum(List<Analysis> analyses) {
+	Map<LocalDate, Long> groupedByMonth = analyses.stream().collect(Collectors.groupingBy(
+			analysis -> analysis.getStartDate().toLocalDate().withDayOfMonth(1), Collectors.summingLong(Analysis::getPrice)));
 
-		return convertToResultFunction(groupedByMonth);
-	}
+
+	return convertToResultFunction(groupedByMonth);
+}
 
 	private List<AnalysisResultDTO> groupByWeek(List<Analysis> analyses) {
 		Map<LocalDate, Long> groupedByMonth = analyses.stream().collect(Collectors.groupingBy(
@@ -195,7 +221,6 @@ public class AnalysisImpl implements IAnalysisService {
 				.map(entry -> new AnalysisResultDTO(entry.getKey(), entry.getValue().intValue()))
 				.collect(Collectors.toList());
 	}
-
 	@Override
 	public AnalysisDTO updateAnalysisService(AnalysisDTO a) throws NotFoundException, IllegalAccessException {
 		Optional<Analysis> analysisToUpdate = analysisRepository.findById(a.getId());
