@@ -37,7 +37,20 @@ public class WebSecurityConfig {
 	public AuthTokenFilter authenticationJwtTokenFilter() {
 		return new AuthTokenFilter();
 	}
-
+	private static final String[] AUTH_WHITELIST = {
+			// -- Swagger UI v2
+			"/v2/api-docs",
+			"/swagger-resources",
+			"/swagger-resources/**",
+			"/configuration/ui",
+			"/configuration/security",
+			"/swagger-ui.html",
+			"/webjars/**",
+			// -- Swagger UI v3 (OpenAPI)
+			"/v3/api-docs/**",
+			"/swagger-ui/**"
+			// other public endpoints of your API may be appended to this array
+	};
 	@Bean
 	public DaoAuthenticationProvider authenticationProvider() {
 		DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
@@ -77,6 +90,7 @@ public class WebSecurityConfig {
 				.exceptionHandling(exception -> exception.authenticationEntryPoint(unauthorizedHandler))
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.authorizeHttpRequests(auth -> {
+					auth.antMatchers(AUTH_WHITELIST).permitAll();
 					auth.antMatchers("/auth/**").permitAll();
 					auth.antMatchers("/analysis/**").hasAnyRole("ADMIN","TECHNICIAN");
 					auth.antMatchers("/analysistype/**").hasAnyRole("ADMIN");
