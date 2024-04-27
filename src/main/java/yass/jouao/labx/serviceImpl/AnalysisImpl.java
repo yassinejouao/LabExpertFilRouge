@@ -152,11 +152,13 @@ public class AnalysisImpl implements IAnalysisService {
 				test.setResult(ResultTest.WAITING);
 				testRepository.save(test);
 				List<TestTypeReagent> testTypeReagent = testTypeReagentRepository.findAllByTestType(testType);
+				Double total_price_reagent = 0.0;
 				for (TestTypeReagent ttr : testTypeReagent) {
 					TestReagent testReagent = new TestReagent();
 					testReagent.setTest(test);
 					testReagent.setReagent(ttr.getReagent());
 					testReagent.setQuantity(ttr.getQuantity());
+					total_price_reagent += ttr.getReagent().getPrice() * ttr.getQuantity();
 					Optional<Reagent> r = reagentRepository.findById(ttr.getReagent().getId());
 					if(r.get().getStock() <= 0) {
 						throw new NotFoundException("Reagent out of stock");
@@ -164,6 +166,8 @@ public class AnalysisImpl implements IAnalysisService {
 					r.get().setStock(r.get().getStock() - ttr.getQuantity());
 					testReagentRepository.save(testReagent);
 				}
+				analysis2.setPrice(analysis2.getPrice() - total_price_reagent.longValue());
+				analysis2 = analysisRepository.save(analysis2);
 			}
 			return analysisMapper.fromAnalysisToAnalysisDTO(analysis2);
 		} else {

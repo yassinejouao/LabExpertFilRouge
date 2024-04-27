@@ -1,0 +1,22 @@
+services:
+  application:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: labexpert
+    ports:
+      - '8080:8080'
+    depends_on:
+      - db
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/test
+      - SPRING_DATASOURCE_USERNAME=compose-postgres
+      - SPRING_DATASOURCE_PASSWORD=compose-postgres
+  db:
+    image: 'postgres:13.1-alpine'
+    container_name: db
+    ports:
+      - '5433:5432'
+    environment:
+      - POSTGRES_USER=compose-postgres
+      - POSTGRES_PASSWORD=compose-postgres
